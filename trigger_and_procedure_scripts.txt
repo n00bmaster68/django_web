@@ -1,0 +1,185 @@
+CREATE OR REPLACE FUNCTION public.addToStock(
+     )
+     RETURNS trigger
+  LANGUAGE 'plpgsql'
+  COST 100
+    VOLATILE PARALLEL UNSAFE
+ AS $BODY$
+ DECLARE
+     i integer;
+     counter integer := 0 ; 
+ BEGIN
+     i := (select count(*) from app_for_user_size);
+     loop 
+         exit when counter = i; 
+         counter := counter + 1 ; 
+         insert into app_for_user_stock(product_id, size_id, quantity) values (NEW.id, counter, 0);
+     end loop; 
+     return NEW;
+ END;
+ $BODY$;
+
+CREATE TRIGGER addNewProductToStock
+  AFTER INSERT
+  ON app_for_user_product
+  FOR EACH ROW
+  EXECUTE PROCEDURE addToStock();
+
+CREATE OR REPLACE FUNCTION public.ReceiveToStock()
+     RETURNS trigger
+  LANGUAGE 'plpgsql'
+  COST 100
+    VOLATILE PARALLEL UNSAFE
+ AS $BODY$
+ BEGIN
+ update app_for_user_stock 
+ set quantity = quantity + NEW.quantity
+ where app_for_user_stock.size_id = NEW.size_id and app_for_user_stock.product_id = NEW.product_id;
+     return NEW;
+ END;
+ $BODY$;
+ 
+ CREATE TRIGGER updateQuantityInStock
+  AFTER INSERT
+  ON app_for_user_goodsreceiptdetail
+  FOR EACH ROW
+  EXECUTE PROCEDURE ReceiveToStock();
+
+CREATE OR REPLACE FUNCTION public.TotalPrice()
+     RETURNS trigger
+  LANGUAGE 'plpgsql'
+  COST 100
+    VOLATILE PARALLEL UNSAFE
+ AS $BODY$
+ BEGIN
+ update app_for_user_goodsreceipt 
+ set total_price = total_price + NEW.quantity*NEW.unit_price
+ where app_for_user_goodsreceipt.id = NEW.goods_receipt_id;
+     return NEW;
+ END;
+ $BODY$;
+ 
+ CREATE TRIGGER updateTotalPrice
+  AFTER INSERT
+  ON app_for_user_goodsreceiptdetail
+  FOR EACH ROW
+  EXECUTE PROCEDURE TotalPrice();
+
+
+CREATE OR REPLACE FUNCTION public.TotalPrice1()
+     RETURNS trigger
+  LANGUAGE 'plpgsql'
+  COST 100
+    VOLATILE PARALLEL UNSAFE
+ AS $BODY$
+ BEGIN
+ update app_for_user_goodsreceipt 
+ set total_price = total_price + NEW.quantity*NEW.unit_price - OLD.quantity*OLD.unit_price
+ where app_for_user_goodsreceipt.id = NEW.goods_receipt_id;
+     return NEW;
+ END;
+ $BODY$;
+ 
+CREATE TRIGGER updateTotalPrice1
+ BEFORE UPDATE
+ ON app_for_user_goodsreceiptdetail
+ FOR EACH ROW
+ EXECUTE PROCEDURE TotalPrice1();
+
+CREATE OR REPLACE FUNCTION public.TotalPrice2()
+     RETURNS trigger
+  LANGUAGE 'plpgsql'
+  COST 100
+    VOLATILE PARALLEL UNSAFE
+ AS $BODY$
+ BEGIN
+ update app_for_user_goodsreceipt 
+ set total_price = total_price - OLD.quantity*OLD.unit_price
+ where app_for_user_goodsreceipt.id = OLD.goods_receipt_id;
+     return OLD;
+ END;
+ $BODY$;
+ 
+CREATE TRIGGER updateTotalPrice2
+ BEFORE DELETE
+ ON app_for_user_goodsreceiptdetail
+ FOR EACH ROW
+ EXECUTE PROCEDURE TotalPrice2();
+
+CREATE OR REPLACE FUNCTION public.setUnitPriceForBill()
+     RETURNS trigger
+  LANGUAGE 'plpgsql'
+  COST 100
+    VOLATILE PARALLEL UNSAFE
+ AS $BODY$
+ DECLARE
+     price integer;
+ BEGIN
+    price = (select app_for_user_product.price 
+                      from app_for_user_product 
+                      where app_for_user_product.id = (select product_id
+                                                       from app_for_user_stock, app_for_user_product
+                                                       where app_for_user_stock.product_id = app_for_user_product.id
+                                                             and app_for_user_stock.id = NEW.product_id));
+    update app_for_user_billdetail
+    set unit_price = price
+    where NEW.id = app_for_user_billdetail.id;
+    
+    update app_for_user_bill
+    set total_price = total_price + price*NEW.quantity
+    where app_for_user_bill.id = NEW.bill_id;
+     return NEW;
+ END;
+ $BODY$;
+ 
+CREATE TRIGGER setUnitPriceForBill
+ AFTER INSERT
+ ON app_for_user_billdetail
+ FOR EACH ROW
+ EXECUTE PROCEDURE setUnitPriceForBill();
+
+ CREATE OR REPLACE FUNCTION public.setTT2()
+     RETURNS trigger
+  LANGUAGE 'plpgsql'
+  COST 100
+    VOLATILE PARALLEL UNSAFE
+ AS $BODY$
+ DECLARE
+     price integer;
+ BEGIN
+    update app_for_user_bill
+    set total_price = total_price - OLD.unit_price*OLD.quantity
+    where app_for_user_bill.id = OLD.bill_id;
+     return OLD;
+ END;
+ $BODY$;
+ 
+CREATE TRIGGER setTT2
+ BEFORE DELETE
+ ON app_for_user_billdetail
+ FOR EACH ROW
+ EXECUTE PROCEDURE setTT2();
+
+
+ CREATE OR REPLACE FUNCTION public.settt1() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+ DECLARE
+     price integer;
+ BEGIN
+    update app_for_user_bill
+    set total_price = total_price - OLD.unit_price*OLD.quantity
+    where app_for_user_bill.id = OLD.bill_id;
+    
+    update app_for_user_stock
+    set quantity = quantity + OLD.quantity
+    where app_for_user_stock.id = OLD.product_id;
+     return OLD;
+ END;
+ $$;
+ 
+CREATE TRIGGER settt1
+    AFTER DELETE 
+    ON public.app_for_user_billdetail
+    FOR EACH ROW
+    EXECUTE FUNCTION public.settt1();

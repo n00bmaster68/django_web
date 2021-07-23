@@ -1,0 +1,206 @@
+{% load static %} 
+{% get_static_prefix as STATIC_PREFIX %}
+{% get_media_prefix as MEDIA_PREFIX %}
+{% load humanize %}
+{% load formatcurr %}
+
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+	<meta charset="UTF-8">
+	<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="{{ MEDIA_PREFIX }}css\style.css">
+	<link href="https://fonts.googleapis.com/css2?family=Alata&display=swap" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
+	integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+	<title>E COMMERCE</title>
+	<link href="https://fonts.googleapis.com/css2?family=Alata&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+</head>
+<body>
+	<div class="container_all" style="width: 100%; position: absolute;">
+		<div class="cart" style="width: 100%; height: 100%;" id="cart">
+			<a class="closeCart" onclick="closeCart()" style="cursor: pointer;">×</a>
+			<h2>Your cart <i class="fas fa-shopping-cart"></i></h2>
+			<ul id="MyCart"></ul>
+		</div>
+		<div class="order" style="width: 100%; height: 100%;" id="order">
+			<a class="closeCart" onclick="closeOrder()" style="cursor: pointer;margin-top: -20px; color: black">×</a>
+			<h2 style="margin-top: 0%; color: black">Your order <i class="fas fa-clipboard-list"></i></h2>
+			<ul id="MyOrder" style="margin-left: 2%; margin-top: 1%; list-style-type: none;"></ul>
+		</div>
+		
+		<div class="header" id = "home" style="height: 80px;">
+		<div class="container">
+			<div class="navbar">
+				<div class="logo">
+					<a href="{% url 'app_for_user:index' %}">
+						<img src="{{ MEDIA_PREFIX }}productImg\logo420.png" width="400px">
+					</a>
+				</div>
+				
+				<div class="searchForm" id = "search">
+					<input type="text" class="input" 
+					placeholder="Search" onkeyup = "search()" id = "input">
+					<div class = "option">
+						<select id="search_type" onchange = "changeSearchType()">
+							<option>more than 1m</option>
+							<option>less than 1m</option>
+							<option>All</option>
+							<option selected>Price</option>
+						</select>
+						<select id="product_type" onchange = "changeProductType()">
+							<option>T-shirt</option>
+							<option>Pant</option>
+							<option>All</option>
+							<option selected>Product type</option>
+						</select>
+					</div>
+					<div id = "search_result" class = "small-container">
+					</div>
+					<a class="closebtn" onclick="closeNav()" style="cursor: pointer;">×</a> 
+				</div>
+
+				<nav>
+					<ul id="MenuItems">
+						<li><a href="{% url 'app_for_user:index' %}" id="home-page">HOME</a></li>
+						<li><a href="{% url 'app_for_user:products' %}">ALL PRODUCTS</a></li>
+						<li><a href="{% url 'app_for_user:pants' %}">PANTS</a></li>
+						<li><a href="{% url 'app_for_user:t_shirts' %}">T-SHIRTS</a></li>
+						<li><a title = "search" onclick = "openNav()"><i class="fas fa-search"></i></a></li>
+					</ul>
+				</nav>
+				<span onclick="menutoggle()" class="menu-icon">&#9776</span>
+
+			</div>
+
+		</div>
+	</div>
+
+
+	<div class="login-page" id = "account">
+		<div class="alert alert-danger" role="alert" id="error" hidden></div>
+		<div class="alert alert-success" role="alert" id="success" hidden></div>
+		<div class="container">	
+			<div class="row">
+				<div class="col3">
+					<div class="form-container">
+						<div class="form-btn">
+							<span onclick="Login()">Log in</span>
+							<span onclick="Register()">Register</span>
+							<hr id="indicator">
+						</div>
+
+						<form id="login">
+							<input type="text" placeholder="email" id = "email1">
+							<input type="password" placeholder="Password" id = "password">
+							<a class="btn" style="margin: 0px 0px !important; font-weight: bold;" id="logBtn" data-url="{% url 'app_for_user:login' %}" data-csrf="{{ csrf_token }}">Log in</a>
+							<a id="" style="cursor: pointer;" data-url="{% url 'app_for_user:logout' %}">Forgot password</a>
+						</form>
+
+						<form id="register">
+							<input type="text" placeholder="User name" id = "user_name1">
+							<input type="email" placeholder="Email" id = "email">
+							<input type="password" placeholder="Password" id = "password1">
+							<input type="password" placeholder="Repeat password" id = "password2">
+							<input type="text" placeholder="Phone number" id = "phoneNumber">
+							<input type="text" placeholder="Address" id = "address">
+							<div style="margin-top: 10px; margin-bottom: 10px">
+								<label>Sex:</label>
+								<select id="sex" class="sex">
+									<option value="Female">Female</option>
+									<option value="Male">Male</option>
+								</select>
+							</div>
+							<a class="btn" id="resBtn" data-url="{% url 'app_for_user:register' %}" data-csrf="{{ csrf_token }}" style="margin: 0px 0px !important; font-weight: bold;">Register</a>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="website-features">
+		<div class="container">
+			<div class="row">
+				<div class="col1">
+					<img src="{{ MEDIA_PREFIX }}productImg\ft1.png">
+					<div class="feature-text">
+						<p><b>100% Authentic</b></p>
+					</div>
+				</div>
+
+				<div class="col1">
+					<img src="{{ MEDIA_PREFIX }}productImg\ft2.png">
+					<div class="feature-text">
+						<p><b>Return in 30 days</b></p>
+					</div>
+				</div>
+
+				<div class="col1">
+					<img src="{{ MEDIA_PREFIX }}productImg\ft3.png">
+					<div class="feature-text">
+						<p><b>Free shipping fee</b></p>
+					</div>
+				</div>
+
+				<div class="col1">
+					<img src="{{ MEDIA_PREFIX }}productImg\ft4.png">
+					<div class="feature-text">
+						<p><b>Pay online or COD</b></p>
+					</div>
+				</div>
+			
+			</div>
+		</div>		
+	</div>
+
+	<button onclick="topFunction()" id="BtnTop" title="Go to top" hidden>Top</button>
+
+	<div class="footer">
+		<div class="row" style="width: 100%;">
+			<div class="col">
+				<h1>
+					Useful link
+				</h1>
+				<p>Privacy policy</p>
+				<p>Terms of use</p>
+				<p>Return policy</p>
+				<p>Discount coupons</p>
+			</div>
+
+			<div class="col">
+				<h1>
+					Company
+				</h1>
+				<p>About us</p>
+				<p>Contact</p>
+				<p>Affiliate</p>
+				<p>Enterprise</p>
+			</div>
+
+			<div class="col">
+				<h1>
+					Follow us on
+				</h1>
+				<p>Facebook</p>
+				<p>Youtube</p>
+				<p>Instagram</p>
+				<p>Tweeter</p>
+			</div>
+
+			<div class="col">
+				<h1>Download app at</h1>
+					<img src="{{ MEDIA_PREFIX }}productImg/apple.png">		
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript" src = "{{ STATIC_PREFIX }}js/scripts.js"></script>
+	<script type="text/javascript" src = "{{ STATIC_PREFIX }}js/ajax_work.js"></script>
+
+</body>
+</html>

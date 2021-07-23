@@ -1,0 +1,130 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+<!-- Override extrahead to add Chart.js -->
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+<script>
+    
+    var chart;
+    function drawChart(data)
+    {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        var labels = [];
+        var sales = [];
+        for (let i = 0; i < data.length; i++)
+        {
+                labels.push(data[i].product);
+                sales.push(data[i].total);
+        }
+        
+        chart = new Chart(ctx, 
+            {
+                type: 'bar',
+                data: 
+                {
+                    labels: labels,
+                    datasets: 
+                    [
+                        {
+                            label: 'Stock sales',
+                            data: sales,
+                            backgroundColor: '#79aec8',
+                            borderWidth:1,
+                            borderColor:'#777',
+                            hoverBorderWidth:3,
+                            hoverBorderColor:'#000'
+                        }
+                    ]
+                },
+                options: 
+                {
+                    title:
+                    {
+                        display:true,
+                        text:'TOP 20 BEST SELLERS',
+                        fontSize:25
+                    },
+                    legend:
+                    {
+                        display:true,
+                        position:'right',
+                        labels:
+                        {
+                            fontColor:'#000',
+                        }
+                    }
+                },
+                layout:
+                {
+                    padding:
+                    {
+                        left:50,
+                        right:0,
+                        bottom:0,
+                        top:0
+                    }
+                },
+                tooltips:
+                {
+                    enabled:true
+                },
+                responsive: true,
+            }); 
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        let data = JSON.parse("{{ chart_data | safe }}".replaceAll("'",'"'));
+        drawChart(data);
+    });
+
+    function resetChart()
+    {
+        if (document.getElementById('month_year').value !== "")
+        {
+            let data = (document.getElementById('month_year').value).split('-');
+            $.ajax({
+                type: 'GET',
+                url: $("#reset").data('url'),
+                data: {'year': data[0], 'month': data[1]},
+                success: function (response) {
+                    chart.destroy();
+                    drawChart(response['data']);
+                    
+                },
+                error: function (response) {
+                    console.log(response)
+                }
+            }) 
+        } 
+    }
+
+    function checkInput()
+    {
+        if (document.getElementById('month_year').value !== "")
+            return true;
+        alert("Please choose month and year");
+        return false;
+    }
+
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Render our chart -->
+<div style="width: 80%;">
+  <canvas style="margin-bottom: 30px; width: 912px; height: 456px;" id="myChart"></canvas>
+</div>
+
+<form action="{% url 'app_for_admin:exportUsersXls' %}" method="get" onsubmit="return checkInput()">
+    <input type="month" id="month_year" name="month_year">
+    <a id="reset" style="margin: 1rem 0; outline: none;background-color: #447e9b;color: white;padding: 5px;border: 4px solid black;border-radius: 12px;font-weight: bold; cursor: pointer" data-url="{% url 'app_for_admin:chartData' %}" onclick="resetChart()">Reload chart</a>
+    <button id="getReport" style="margin: 1rem 0; outline: none;background-color: #447e9b;color: white;padding: 5px;border: 4px solid black;border-radius: 12px;font-weight: bold; cursor: pointer; height: 32px">Get report</button>
+</form>
+<!-- Render the rest of the ChangeList view -->
+{{ block.super }}
+{% endblock %}

@@ -1,0 +1,283 @@
+{% load static %} 
+{% get_static_prefix as STATIC_PREFIX %}
+{% get_media_prefix as MEDIA_PREFIX %}
+{% load humanize %}
+{% load formatcurr %}
+
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+	<meta charset="UTF-8">
+	<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="{{ MEDIA_PREFIX }}css\style.css">
+	<link href="https://fonts.googleapis.com/css2?family=Alata&display=swap" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
+	integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+	<title>E COMMERCE</title>
+	<link href="https://fonts.googleapis.com/css2?family=Alata&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+</head>
+<body>
+	<div class="container_all" style="width: 100%; position: absolute;">
+		<div class="cart" style="width: 100%; height: 100%;" id="cart">
+			<a class="closeCart" onclick="closeCart()" style="cursor: pointer;">×</a>
+			<h2 style="margin-left: 5px;margin-top: -15px;color: #ff8c00;">Your cart <i class="fas fa-shopping-cart"></i></h2>
+            <div class="table-wrapper-scroll-y my-custom-scrollbar">
+                <table class="table table-bordered table-striped mb-0" style="max-height: 600px">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Size</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Unit price</th>
+                    </tr>
+                    </thead>
+                    <tbody id="content">
+                    </tbody>
+                </table>
+            </div>
+            <div class="bottom_right" id="order_div" hidden>
+                <p id="total" style="margin-left: 45%; font-size: 18px !important; margin-bottom: -20px;"></p>
+                <input type="text" placeholder="Address" style="outline: none; border-radius: 15px; border: 3px solid #ff8c00; font-size: 20px" id="address">
+                <a class="btn" id="order_submit" data-url="{% url 'app_for_user:submitOrder' %}">Order</a> 
+            </div>
+		</div>
+
+		<div class="order" style="width: 100%; height: 100%;" id="order">
+			<a class="closeCart" onclick="closeOrder()" style="cursor: pointer;margin-top: -20px; color: black">×</a>
+			<h2 style="margin-top: 0%; margin-left: 1%;color: #ff8c00">Your order <i class="fas fa-clipboard-list"></i></h2>
+			<ul id="MyOrder" style="margin-left: 2%; margin-top: 1%; list-style-type: none; display: flex; "></ul>
+			<div class="table-wrapper-scroll-y my-custom-scrollbar" style="z-index: 10000;margin: 0 auto;margin-top: -10%;" hidden id="detail_table">
+                <table class="table table-bordered table-striped mb-0" style="max-height: 600px">
+                    <thead>
+						
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Size</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Unit price</th>
+						<th scope="col"><a class="btn" style="font-size: 30px !important; padding: 0 !important; margin: -10px !important" id="closeTable">×</a></th>
+                    </tr>
+                    </thead>
+                    <tbody id="content2">
+                    </tbody>
+                </table>
+            </div>
+		</div>
+
+		<div class="header" id = "home" >
+		<div class="container">
+			<div class="navbar">
+				<div class="logo">
+					<a>
+						<img src="{{ MEDIA_PREFIX }}productImg\logo420.png" width="400px">
+					</a>
+				</div>
+				
+				<div class="searchForm" id = "search">
+					<input type="text" class="input" placeholder="Search" id = "input" data-url="{% url 'app_for_user:searchProduct' %}">
+					<div class = "option">
+						<div class="range">
+							<label>Min price:</label>
+							<input type="number" min=0 placeholder="Min" id="min_value">
+							<label>Max price:</label>
+							<input type="number" min=0 placeholder="Max" id="max_value">
+						</div>
+						<select id="product_type">
+							<option value="1">T-shirt</option>
+							<option value="2">Pant</option>
+							<option value="all">All</option>
+							<option value="all" selected>Product type</option>
+						</select>
+					</div>
+					<div id = "search_result" class = "small-container">
+					</div>
+					<a class="closebtn" onclick="closeSearchForm()" style="cursor: pointer;">×</a> 
+				</div>
+
+				<nav>
+					<ul id="MenuItems">
+						<li><a href="{% url 'app_for_user:index' %}" id = "home-page">HOME</a></li>
+						<li><a href="{% url 'app_for_user:products' %}">ALL PRODUCTS</a></li>
+						<li><a href="{% url 'app_for_user:pants' %}">PANTS</a></li>
+						<li><a href="{% url 'app_for_user:t_shirts' %}">T-SHIRTS</a></li>
+						<li><a title = "search" onclick = "openSearchForm()"><i class="fas fa-search"></i></a></li>
+						{% if request.user.username %}
+							<li id="your_cart" data-url="{% url 'app_for_user:yourCart' %}"><a title = "shopping cart" onclick="openCart()"><i style = "width: 80%;" class="fas fa-shopping-cart"></i></a></li>
+							<li><a title = "your order" id = "your_order" data-url="{% url 'app_for_user:getOrder' %}"><i class="fas fa-clipboard-list"></i></a></li>
+							<li onclick="showUser()" style="font-size: 18px;">
+								{{ request.user.username|getName }}
+								<div class="hide" hidden id="hidden">
+									<a href="{% url 'app_for_user:profile' %}"><p style="font-size: 20px;">Profile</p></a>
+									
+									<div id="logOut1">
+										<a href="{% url 'app_for_user:logout' %}">
+											<i class="fas fa-sign-out-alt"></i>
+										</a>
+									</div>
+								</div>
+							</li>
+						{% else %}
+							<li id="acc"><a title = "log in" href = "{% url 'app_for_user:signInOrUp' %}"><i class="fas fa-user"></i></a></li>
+						{% endif %}	
+					</ul>
+				</nav>
+
+				<span onclick="menutoggle()" class="menu-icon">&#9776</span>
+
+			</div>
+
+			<div class="row">
+				<div class="col2" id = "propagation">
+					<h1>You only live once!</h1>
+					<p>Just stay healthy, keep fit and enjoy this life</p>
+					<a class="btn" href="{% url 'app_for_user:products' %}" >EXPLORE &#10152;</a>
+				</div>
+				<div class="col2">
+					<img src="{{ MEDIA_PREFIX }}productImg\endorser.png" id = "Endorser">
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div class="small-container" id = "bs&na">
+		<h2 class="title">Best sellers</h2>
+		<div class="row2" id="bestSeller">
+			{% for best_seller in  best_sellers%}
+				<div class="col4">
+					<img src="{{ MEDIA_PREFIX }}{{best_seller.img}}">
+					<h4>{{best_seller.name}}</h4>
+					<div class="rating">
+						<span>&#9733</span>
+						<span>&#9733</span>
+						<span>&#9733</span>
+						<span>&#9733</span>
+						<span>&#9733</span>
+					</div>
+					<p><b >{{ best_seller.price|currFormat }} </b></p>
+					<!-- ' + 'id="' + product_info[j].id + '" onclick="showProductDetail(this.id)" -->
+					<a class="DetailBtn" href="{% url 'app_for_user:productDetail' best_seller.id %}">Details</a>
+				</div>
+			{% endfor %}
+		</div>
+
+		<h2 class="title" style="margin-top: 50px;">News arrivals</h2>
+		<div class="row2" id="newArrival">
+			{% for new_arrival in  new_arrivals%}
+				<div class="col4">
+					<img src="{{ MEDIA_PREFIX }}{{new_arrival.img}}">
+					<h4>{{new_arrival.name}}</h4>
+					<div class="rating">
+						<span>&#9733</span>
+						<span>&#9733</span>
+						<span>&#9733</span>
+						<span>&#9733</span>
+						<span>&#9733</span>
+					</div>
+					<p><b >{{ new_arrival.price|currFormat }} </b></p>
+					<!-- ' + 'id="' + product_info[j].id + '" onclick="showProductDetail(this.id)" -->
+					<a class="DetailBtn" href="{% url 'app_for_user:productDetail' new_arrival.id %}">Details</a>
+				</div>
+			{% endfor %}
+		</div>
+	</div>
+
+	<!-- <section id="banner2" class="banner2">
+		<div class="container2">
+			<div class="largeee-banner">
+				<img src="{{ MEDIA_PREFIX }}productImg/banner.png">
+			</div>
+			<div class="content-banner2">
+				<p class="dont">DON’T SWEAT GIFTING</p>
+				<p>Order early—for peace of mind, start holiday gift shopping now to avoid shipping delays.</p>
+				<p class="top">SHOP TOP GIFTS</p>
+			</div>
+		</div>
+	</section> -->
+
+	<div class="website-features">
+			<div class="container">
+				<div class="row">
+					<div class="col1">
+						<img src="{{ MEDIA_PREFIX }}productImg\ft1.png">
+						<div class="feature-text">
+							<p><b>100% Authentic</b></p>
+						</div>
+					</div>
+
+					<div class="col1">
+						<img src="{{ MEDIA_PREFIX }}productImg\ft2.png">
+						<div class="feature-text">
+							<p><b>Return in 30 days</b></p>
+						</div>
+					</div>
+
+					<div class="col1">
+						<img src="{{ MEDIA_PREFIX }}productImg\ft3.png">
+						<div class="feature-text">
+							<p><b>Free shipping fee</b></p>
+						</div>
+					</div>
+
+					<div class="col1">
+						<img src="{{ MEDIA_PREFIX }}productImg\ft4.png">
+						<div class="feature-text">
+							<p><b>Pay online or COD</b></p>
+						</div>
+					</div>
+				
+				</div>
+			</div>		
+	</div>
+
+	<button onclick="topFunction()" id="BtnTop" title="Go to top">Top</button>
+
+	<div class="footer">
+		<div class="row" style="width: 100%;">
+			<div class="col">
+				<h1>
+					Useful link
+				</h1>
+				<p>Privacy policy</p>
+				<p>Terms of use</p>
+				<p>Return policy</p>
+				<p>Discount coupons</p>
+			</div>
+
+			<div class="col">
+				<h1>
+					Company
+				</h1>
+				<p>About us</p>
+				<p>Contact</p>
+				<p>Affiliate</p>
+				<p>Enterprise</p>
+			</div>
+
+			<div class="col">
+				<h1>
+					Follow us on
+				</h1>
+				<p>Facebook</p>
+				<p>Youtube</p>
+				<p>Instagram</p>
+				<p>Tweeter</p>
+			</div>
+
+			<div class="col">
+				<h1>Download app at</h1>
+					<img src="{{ MEDIA_PREFIX }}productImg/apple.png">		
+			</div>
+		</div>
+	</div>
+	</div>
+	<script type="text/javascript" src = "{{ STATIC_PREFIX }}js/scripts.js"></script>
+	<script type="text/javascript" src = "{{ STATIC_PREFIX }}js/ajax_work.js"></script>
+</body>
+</html>
