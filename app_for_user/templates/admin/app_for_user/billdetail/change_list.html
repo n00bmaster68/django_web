@@ -1,0 +1,29 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+<!-- Override extrahead to add Chart.js -->
+{% block extrahead %}
+{{ block.super }}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+<script>
+    function checkInput()
+    {
+        if (document.getElementById('month_year').value !== "")
+            return true;
+        alert("Please choose month and year");
+        return false;
+    }
+
+</script>
+{% endblock %}
+
+{% block content %}
+
+<form action="{% url 'app_for_admin:exportBillDetail' %}" method="get" onsubmit="return checkInput()">
+    <input type="month" id="month_year" name="month_year">
+    <button id="getReport" style="margin: 1rem 0; outline: none;background-color: #447e9b;color: white;padding: 5px;border: 4px solid black;border-radius: 12px;font-weight: bold; cursor: pointer; height: 32px">Bill detail report</button>
+</form>
+<!-- Render the rest of the ChangeList view -->
+{{ block.super }}
+{% endblock %}

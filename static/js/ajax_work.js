@@ -281,38 +281,54 @@ $('#product_type').change(function()
 });
 
 $("#order_detail").click(function (e) {
-    console.log('dmm chay ne order_detail');
-    let stock_id = $("#size").children("option:selected").val();
-    let quantity = $("#quantity").val()
-    console.log(stock_id, quantity);
-    
-    var data_inp = {
-        "stock_id": stock_id,
-        "quantity": quantity
-    }
-        
-    e.preventDefault();
-    $.ajax({
-        type: 'GET',
-        url: $("#order_detail").data('url'),
-        data: data_inp,
-        success: function (response) {
-            if (response['status'] == 200)
-            {
-                showSuccess("<ul><li class='closeX'><i class='fas fa-times' onclick='hideSuccess()'></i></li>" + response['msg'] + "</ul>");
-                console.log("DMM", response);
+    if (document.getElementById("acc") === null)
+    {
+        console.log('dmm chay ne order_detail');
+        let stock_id = $("#size").children("option:selected").val();
+        let quantity = $("#quantity").val()
+        console.log(stock_id, quantity);
+        // isNumeric(quantity) && 
+        if (parseInt(quantity) > 0)
+        {
+            var data_inp = {
+                "stock_id": stock_id,
+                "quantity": quantity
             }
-            else 
-            {
-                showAlert("<ul style='margin-bottom: -5px;'>"+ "<li class='closeX'><i class='fas fa-times' onclick='hideAlert()'></i></li>" + response['msg'] + "</ul");
-                setTimeout(() => {hideAlert();}, 30000);
-            }
-            console.log("DMM2", response);
-        },
-        error: function (response) {
-            console.log(response)
+                
+            e.preventDefault();
+            $.ajax({
+                type: 'GET',
+                url: $("#order_detail").data('url'),
+                data: data_inp,
+                success: function (response) {
+                    if (response['status'] == 200)
+                    {
+                        showSuccess("<ul><li class='closeX'><i class='fas fa-times' onclick='hideSuccess()'></i></li>" + response['msg'] + "</ul>");
+                        console.log("DMM", response);
+                    }
+                    else 
+                    {
+                        showAlert("<ul style='margin-bottom: -5px;'>"+ "<li class='closeX'><i class='fas fa-times' onclick='hideAlert()'></i></li>" + response['msg'] + "</ul");
+                        setTimeout(() => {hideAlert();}, 30000);
+                    }
+                    console.log("DMM2", response);
+                },
+                error: function (response) {
+                    console.log(response)
+                }
+            })
         }
-    })  
+        else
+        {   
+            showAlert("<ul style='margin-bottom: -5px;'>"+ "<li class='closeX'><i class='fas fa-times' onclick='hideAlert()'></i></li>" + "Quantity must be a positive integer" + "</ul");
+            setTimeout(() => {hideAlert();}, 30000);
+        }
+    }
+    else
+    {
+        showAlert("<ul style='margin-bottom: -5px;'>"+ "<li class='closeX'><i class='fas fa-times' onclick='hideAlert()'></i></li>" + "You must log in to order" + "</ul");
+        setTimeout(() => {hideAlert();}, 30000);
+    }
 })
 
 

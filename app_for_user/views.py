@@ -15,21 +15,25 @@ from django.conf import settings
 import math
 
 # Create your views here.
-
-# stock_list = Stock.objects.annotate(total_num=Sum('quantity')).order_by('total_num').values('product__id').distinct()
-
-def getBestSeller():
-	stock_list = Stock.objects.annotate(total_num=Sum('quantity')).order_by('total_num').values('product__id').distinct()[:5]
-	ids = []
-	for stock in stock_list:
-		ids.append(stock['product__id'])
-	return ids	
-
 def index(request):
-	return render(request, "Product/home.html", {
+    return render(request, "Product/home.html", {
 		"best_sellers": Product.objects.filter(id__in=getBestSeller()),
 		"new_arrivals": Product.objects.order_by('id')[:4]
 		})
+
+def getBestSeller():
+	stock_list = Stock.objects.values('product__id').annotate(total_num=Sum('quantity')).order_by('total_num')[:4]
+	ids = []
+	for stock in stock_list:
+		ids.append(stock['product__id'])
+	return ids
+
+def getBestSeller():
+    stock_list = Stock.objects.values('product__id').annotate(total_num=Sum('quantity')).order_by('total_num')[:4]
+    ids = []
+    for stock in stock_list:
+        ids.append(stock['product__id'])
+    return ids	
 
 def pants(request):
 	return HttpResponseRedirect(reverse("app_for_user:pants_page", args=(1,)))
@@ -78,7 +82,7 @@ def products_page(request, page_num):
 
 def productDetail(request, product_id):
 	product = Product.objects.get(id = product_id)
-	available_sizes = Stock.objects.filter(product__id = product_id, quantity__gt = 0).values('size__size', 'id').distinct()
+	available_sizes = Stock.objects.filter(product__id = product_id, quantity__gt = 0).values('size__size', 'id').distinct('size__size')
 	return render(request, "Product/productDetail.html", {
 		"product": product,
 		"available_sizes": available_sizes
@@ -194,7 +198,7 @@ def searchProduct(request):
 			all = all.filter(type__id=int(request.GET.get("type")))
 		if min != 0 or max != 0:
 			if max == 0 and min != 0:
-    				all = all.filter(price__gte=min)
+				all = all.filter(price__gte=min)
 			if min == 0 and max != 0:
 				all = all.filter(price__lte=max)
 			if min != 0 and max != 0:
@@ -217,23 +221,22 @@ def order(request):
 		unit_price = stock[0].product.price
 
 		if stock[0].quantity >= quantity:
-			# left = stock[0].quantity - int(request.GET.get('quantity'))
-			# stock[0].setQuantity(left)
-			# stock[0].save()
-			# print("\n\n\n\n\n\n", stock[0].quantity)
 			bill = None
 			try:
 				bill = Bill.objects.get(state=0, customer=request.user)
+				print("\n\n\n\n\n\n run this")
 			except:
 				bill = Bill(customer=request.user, state=0)
 
 			bill_detail = None
 			try:
-				bill_detail = BillDetail.objects.get(bill=bill, product=stock[0])
-				bill_detail.quantity += quantity
+				bill_detail = BillDetail.objects.get(bill=bill, stock=stock[0])
+				bill.total_price -= bill_detail.quantity*bill_detail.unit_price
+				bill_detail.quantity = quantity + bill_detail.quantity
+				bill_detail.save()
+				bill.total_price += bill_detail.quantity*bill_detail.unit_price
 			except:
-				bill_detail = BillDetail(bill=bill, product=stock[0], quantity=quantity, unit_price=unit_price)
-				bill.total_price  += bill_detail.quantity*bill_detail.unit_price
+				bill_detail = BillDetail(bill=bill, stock=stock[0], quantity=quantity, unit_price=unit_price)
 			
 			bill.save()
 			bill_detail.save()
@@ -255,7 +258,7 @@ def yourCart(request):
 				i += 1
 				# print("\n\n\n\n\n",bill_detail.quantity, bill_detail.unit_price, total_price)
 				total_price += (bill_detail.quantity*bill_detail.unit_price)
-				content += '<tr id="' + str(bill_detail.id) + 'tr"><th scope="row">' + str(i) + '</th><td>' + bill_detail.product.product.name + '</td><td>' + bill_detail.product.size.size + '</td><td>' + str(bill_detail.quantity) + '</td><td>' + currency(bill_detail.unit_price) + '</td><td><button type="button" class="btn btn-danger" style="margin-top: auto !important;margin-bottom: auto !important;" id="' + str(bill_detail.id) + '" onclick="deleteDetail(this.id)">Delete</button></td></tr>'
+				content += '<tr id="' + str(bill_detail.id) + 'tr"><th scope="row">' + str(i) + '</th><td>' + bill_detail.stock.product.name + '</td><td>' + bill_detail.stock.size.size + '</td><td>' + str(bill_detail.quantity) + '</td><td>' + currency(bill_detail.unit_price) + '</td><td><button type="button" class="btn btn-danger" style="margin-top: auto !important;margin-bottom: auto !important;" id="' + str(bill_detail.id) + '" onclick="deleteDetail(this.id)">Delete</button></td></tr>'
 		except:
 			content = 'none'
 		# print(total_price, request.user.id)
@@ -291,7 +294,7 @@ def submitOrder(request):
 def getOrder(request):
 	if request.method == "GET" and request.user:
 		try:
-			bills = Bill.objects.filter(state=1, customer=request.user).order_by('-id')
+			bills = Bill.objects.filter(state__gt=0, customer=request.user).order_by('-id')
 			content = ''
 			for bill in bills:
 				date = str(bill.date.day) + '/' + str(bill.date.month) + '/' + str(bill.date.year)
@@ -311,7 +314,7 @@ def getOrderDetails(request):
 			content = ''
 			i = 1
 			for bill_detail in bill_details:
-				content += '<tr><th scope="row">' + str(i) + '</th><td>' + bill_detail.product.product.name + '</td><td>' + bill_detail.product.size.size + '</td><td>' + str(bill_detail.quantity) + '</td><td>' + currency(bill_detail.unit_price) + '</td></tr>'
+				content += '<tr><th scope="row">' + str(i) + '</th><td>' + bill_detail.stock.product.name + '</td><td>' + bill_detail.stock.size.size + '</td><td>' + str(bill_detail.quantity) + '</td><td>' + currency(bill_detail.unit_price) + '</td></tr>'
 				i += 1
 			return JsonResponse({"msg": content, "status": 200}, status=200)
 		except:

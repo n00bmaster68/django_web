@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from Users.models import Account
+from Users.affine_algo import *
 
 phone_regex = RegexValidator("^0\d{8,10}$", "your phone number is not valid")
 BILL_STATE = (
@@ -13,6 +14,13 @@ BILL_STATE = (
 # Create your models here.
 
 ### PRODUCT ####
+class Size(models.Model):
+    id = models.AutoField(primary_key=True)
+    size = models.CharField(max_length=10, unique=True)
+
+    def __str__(self):
+        return (self.size).upper()
+
 class ProductType(models.Model):
     id = models.AutoField(primary_key=True)
     type_name = models.CharField(max_length=20, unique=True, verbose_name="Type name")
@@ -33,31 +41,15 @@ class Product(models.Model):
     def __str__(self):
         return f"{(self.name).title()}"
 
-class Size(models.Model):
+class Warehouse(models.Model):
     id = models.AutoField(primary_key=True)
-    size = models.CharField(max_length=10, unique=True)
+    name = models.CharField(max_length=50, verbose_name="Name", default='')
+    region = models.CharField(max_length=50, default='')
+    address = models.CharField(max_length=100, verbose_name="Address", unique=True)
+    phone_num = models.CharField(max_length=10, verbose_name="Phone number", validators=[phone_regex], null=True, unique=True)
 
     def __str__(self):
-        return (self.size).upper()
-
-class Stock(models.Model):
-    id = models.AutoField(primary_key=True)
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
-    size = models.ForeignKey(Size, on_delete=models.PROTECT)
-    quantity = models.IntegerField(default=0, validators=[MinValueValidator(0),])
-
-    class Meta():
-        unique_together = ["product", "size"]
-
-    def __str__(self):
-        return str(self.product) + " - " + str(self.size)
-    
-    def getPrice(self):
-        return self.product.price
-    
-    def setQuantity(self, quantity):
-        self.quantity = quantity
-        self.save()
+        return f"{self.name}"
 
 ### END PRODUCT ###
 
@@ -72,11 +64,34 @@ class Vendor(models.Model):
     
     def __str__(self):
         return f"{self.name}"
+    
+    def save(self, *args, **kwargs):
+        if self.name is not None:
+            self.name = affine_encoding(self.name, 7, 3)
+        if self.email is not None:
+            self.email = affine_encoding(self.email, 7, 3) 
+        if self.address is not None:
+            self.address = affine_encoding(self.address, 7, 3)
+        if self.phone_num is not None:
+            self.phone_num = affine_encoding(self.phone_num, 7, 3) 
+        super().save(*args, **kwargs)
+        
+    def update(self, *args, **kwargs):
+        if self.name is not None:
+            self.name = affine_encoding(self.name, 7, 3)
+        if self.email is not None:
+            self.email = affine_encoding(self.email, 7, 3) 
+        if self.address is not None:
+            self.address = affine_encoding(self.address, 7, 3)
+        if self.phone_num is not None:
+            self.phone_num = affine_encoding(self.phone_num, 7, 3) 
+        super().update(*args, **kwargs)
 
 class GoodsReceipt(models.Model):
     id = models.AutoField(primary_key=True)
     deliverer = models.CharField(max_length=100, verbose_name="Deliverer name")
     vendor = models.ForeignKey(Vendor, verbose_name="Vendor", default='', on_delete=models.PROTECT)
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
     total_price = models.IntegerField(verbose_name='Total price', default=0, validators=[MinValueValidator(0),])
     date = models.DateTimeField (verbose_name="Date\Time", auto_now_add=True)
 
@@ -94,6 +109,27 @@ class GoodsReceiptDetail(models.Model):
     class Meta:
         verbose_name = 'Goods receipt detail'
         unique_together = ['goods_receipt', 'product', 'size']
+        
+    def __str__(self):
+        return 'Receipt note ' + f'{self.goods_receipt.id}' 
+    
+
+class Stock(models.Model):
+    id = models.AutoField(primary_key=True)
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    size = models.ForeignKey(Size, on_delete=models.PROTECT)
+    receipt_detail = models.ForeignKey(GoodsReceiptDetail, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=0, validators=[MinValueValidator(0),])
+
+    # class Meta():
+    #     unique_together = ["product", "size"]
+
+    def __str__(self):
+        return str(self.product) + " - " + str(self.size)
+    
+    def getPrice(self):
+        return self.product.price
+
 ### END VENDOR ###
 
 ### BILL ###
@@ -114,11 +150,11 @@ class Bill(models.Model):
 class BillDetail(models.Model):
     id = models.AutoField(primary_key=True)
     bill = models.ForeignKey(Bill, verbose_name="Bill", on_delete=models.CASCADE, default="")
-    product = models.ForeignKey(Stock, verbose_name="Product", on_delete=models.CASCADE, default=2)
+    stock = models.ForeignKey(Stock, verbose_name="Stock", on_delete=models.CASCADE, default=2)
     quantity = models.IntegerField(verbose_name="Quantity", default=0, validators=[MinValueValidator(0),])
     unit_price = models.IntegerField(verbose_name="Unit price", default=0, validators=[MinValueValidator(0),])
 
     class Meta:
-        unique_together = ['bill', 'product']
+        unique_together = ['bill', 'stock']
         
 ### End bill ###

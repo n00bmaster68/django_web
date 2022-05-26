@@ -86,7 +86,7 @@ WSGI_APPLICATION = 'qlbh.wsgi.application'
 DATABASES = {
    'default': {
        'ENGINE': 'django.db.backends.postgresql',
-       'NAME': 'qlbh',
+       'NAME': 'QLBH',
        'USER': 'postgres',
        'PASSWORD': '123456',
        'HOST': 'localhost',

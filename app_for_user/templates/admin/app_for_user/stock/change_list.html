@@ -9,8 +9,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
 <script>
-    
-    var chart;
+    /*var chart;
     function drawChart(data)
     {
         const ctx = document.getElementById('myChart').getContext('2d');
@@ -18,7 +17,7 @@
         var sales = [];
         for (let i = 0; i < data.length; i++)
         {
-                labels.push(data[i].product);
+                labels.push(data[i].stock__product__name);
                 sales.push(data[i].total);
         }
         
@@ -101,7 +100,7 @@
                 }
             }) 
         } 
-    }
+    }*/
 
     function checkInput()
     {
@@ -116,13 +115,13 @@
 
 {% block content %}
 <!-- Render our chart -->
-<div style="width: 80%;">
+<!-- <div style="width: 80%;">
   <canvas style="margin-bottom: 30px; width: 912px; height: 456px;" id="myChart"></canvas>
-</div>
+</div> -->
 
-<form action="{% url 'app_for_admin:exportUsersXls' %}" method="get" onsubmit="return checkInput()">
+<form action="{% url 'app_for_admin:exportStock' %}" method="get" onsubmit="return checkInput()">
     <input type="month" id="month_year" name="month_year">
-    <a id="reset" style="margin: 1rem 0; outline: none;background-color: #447e9b;color: white;padding: 5px;border: 4px solid black;border-radius: 12px;font-weight: bold; cursor: pointer" data-url="{% url 'app_for_admin:chartData' %}" onclick="resetChart()">Reload chart</a>
+    <!-- <a id="reset" style="margin: 1rem 0; outline: none;background-color: #447e9b;color: white;padding: 5px;border: 4px solid black;border-radius: 12px;font-weight: bold; cursor: pointer" data-url="{% url 'app_for_admin:chartData' %}" onclick="resetChart()">Reload chart</a> -->
     <button id="getReport" style="margin: 1rem 0; outline: none;background-color: #447e9b;color: white;padding: 5px;border: 4px solid black;border-radius: 12px;font-weight: bold; cursor: pointer; height: 32px">Get report</button>
 </form>
 <!-- Render the rest of the ChangeList view -->
